@@ -1,5 +1,5 @@
 <script setup>
-    import axios from 'axios';
+import axios from 'axios';
 </script>
 
 <script>
@@ -16,8 +16,8 @@ export default {
     },
     computed: {
         baseUrl() {
-            if (window.location.hostname=='localhost')
-                return 'http://localhost:3000' 
+            if (window.location.hostname == 'localhost')
+                return 'http://localhost:3000'
             else {
                 const codespace_host = window.location.hostname.replace('5173', '3000')
                 return `https://${codespace_host}`;
@@ -35,11 +35,47 @@ export default {
             })
     },
     methods: {
-        editPost(id) {
-            
+        async editPost(id) {
+            this.editPostId = id;
+            this.showEditPost = true;
+            try {
+                const response = await axios.get(`${this.baseUrl}/posts`);
+                const data = response.data;
+                console.log(data);
+                for (var post of data) {
+                    if (post.id === id) {
+                        this.mood = post.mood;
+                        this.entry = post.entry;
+                    }
+                }
+                console.log(data);
+
+            }
+            catch (e) {
+                console.error(e);
+            }
+
         },
-        updatePost(event) {
-            
+        async updatePost(event) {
+            try {
+                const response = await axios.post(`${this.baseUrl}/updatePost?id=${this.editPostId}`, {
+                    entry: this.entry,
+                    mood: this.mood,
+                })
+                console.log(response);
+                this.showEditPost = false;
+            }
+            catch (e) {
+                console.error(e);
+            }
+            axios.get(`${this.baseUrl}/posts`)
+                .then(response => {
+                    this.posts = response.data
+                })
+                .catch(error => {
+                    this.posts = [{ entry: 'There was an error: ' + error.message }]
+                })
+
         }
     }
 }
@@ -61,7 +97,7 @@ export default {
                     <td>{{ post.id }}</td>
                     <td>{{ post.entry }}</td>
                     <td>{{ post.mood }}</td>
-                    <td><button>Edit</button></td>
+                    <td><button v-on:click="editPost(post.id)">Edit</button></td>
                 </tr>
             </tbody>
 
@@ -70,7 +106,7 @@ export default {
         <div id="editPost" v-if="showEditPost">
             <h3>Edit Post</h3>
             <div id="postContent" class="mx-3">
-                <form>
+                <form v-on:submit.prevent="updatePost('')">
                     <div class="mb-3">
                         <label for="entry" class="form-label">Entry</label>
                         <textarea id="entry" class="form-control" v-model="entry" required></textarea>
